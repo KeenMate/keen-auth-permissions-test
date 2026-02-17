@@ -1,0 +1,44 @@
+# Local configuration - copy to .local.exs and fill in your credentials
+# This file is gitignored
+
+import Config
+
+# Azure AD / Microsoft Entra ID configuration
+config :keen_auth_permissions_test, :keen_auth,
+  strategies: [
+    entra: [
+      label: "Microsoft Entra",
+      icon: "microsoft",
+      color: "#0078d4",
+      strategy: Assent.Strategy.AzureAD,
+      mapper: KeenAuth.Mapper.AzureAD,
+      processor: KeenAuthPermissionsTest.Auth.Processor,
+      config: [
+        # Get these from Azure Portal > App Registrations
+        client_id: "YOUR_CLIENT_ID",
+        client_secret: "YOUR_CLIENT_SECRET",
+        tenant_id: "YOUR_TENANT_ID",
+        redirect_uri: "http://localhost:4000/auth/entra/callback"
+      ]
+    ]
+  ]
+
+# Optional: Add GitHub authentication
+# config :keen_auth_permissions_test, :keen_auth,
+#   strategies: [
+#     entra: [...],  # keep existing
+#     github: [
+#       enabled: true,
+#       label: "GitHub",
+#       icon: "github",
+#       color: "#333333",
+#       strategy: Assent.Strategy.Github,
+#       mapper: KeenAuth.Mapper.Github,
+#       processor: KeenAuthPermissionsTest.Auth.Processor,
+#       config: [
+#         client_id: "YOUR_GITHUB_CLIENT_ID",
+#         client_secret: "YOUR_GITHUB_CLIENT_SECRET",
+#         redirect_uri: "http://localhost:4000/auth/github/callback"
+#       ]
+#     ]
+#   ]

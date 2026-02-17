@@ -1,0 +1,82 @@
+<Layouts.flash_group flash={@flash} />
+
+<div class="min-h-screen bg-base-200 flex items-center justify-center">
+  <div class="card bg-base-100 w-full max-w-md shadow-2xl">
+    <div class="card-body">
+      <h1 class="card-title text-2xl justify-center mb-4">Sign In</h1>
+
+      <!-- Email/Password Form -->
+      <form action="/auth/email/new" method="post" class="space-y-4">
+        <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+        <input type="hidden" name="redirect_to" value="/dashboard" />
+
+        <div class="form-control">
+          <label class="label" for="email">
+            <span class="label-text">Email</span>
+          </label>
+          <input
+            type="email"
+            name="email"
+            id="email"
+            placeholder="you@example.com"
+            class="input input-bordered w-full"
+            required
+          />
+        </div>
+
+        <div class="form-control">
+          <label class="label" for="password">
+            <span class="label-text">Password</span>
+          </label>
+          <input
+            type="password"
+            name="password"
+            id="password"
+            placeholder="Your password"
+            class="input input-bordered w-full"
+            required
+          />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full">Sign In</button>
+      </form>
+
+      <div class="text-center mt-2">
+        <a href="/register" class="link link-primary text-sm">Don't have an account? Register</a>
+      </div>
+
+      <div class="divider">OR CONTINUE WITH</div>
+
+      <!-- OAuth Providers -->
+      <div class="space-y-3">
+        <%= for provider <- @providers, provider.name != :email do %>
+          <a
+            href={provider.path}
+            class="btn btn-outline w-full gap-2"
+            style={"border-color: #{provider.color}; color: #{provider.color};"}
+          >
+            <%= case provider.icon do %>
+              <% "microsoft" -> %>
+                <svg class="w-5 h-5" viewBox="0 0 23 23" fill="currentColor">
+                  <path d="M0 0h11v11H0zM12 0h11v11H12zM0 12h11v11H0zM12 12h11v11H12z"/>
+                </svg>
+              <% "github" -> %>
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.37 0 0 5.506 0 12.303c0 5.445 3.435 10.043 8.205 11.674.6.107.825-.262.825-.585 0-.292-.015-1.261-.015-2.291C6 21.67 5.22 20.346 4.98 19.654c-.135-.354-.72-1.446-1.23-1.738-.42-.23-1.02-.8-.015-.815.945-.015 1.62.892 1.845 1.261 1.08 1.86 2.805 1.338 3.495 1.015.105-.8.42-1.338.765-1.645-2.67-.308-5.46-1.37-5.46-6.075 0-1.338.465-2.446 1.23-3.307-.12-.308-.54-1.569.12-3.26 0 0 1.005-.323 3.3 1.26.96-.276 1.98-.415 3-.415s2.04.139 3 .416c2.295-1.6 3.3-1.261 3.3-1.261.66 1.691.24 2.952.12 3.26.765.861 1.23 1.953 1.23 3.307 0 4.721-2.805 5.767-5.475 6.075.435.384.81 1.122.81 2.276 0 1.645-.015 2.968-.015 3.383 0 .323.225.707.825.585a12.047 12.047 0 0 0 5.919-4.489A12.536 12.536 0 0 0 24 12.304C24 5.505 18.63 0 12 0Z"/>
+                </svg>
+              <% _ -> %>
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+            <% end %>
+            Sign in with <%= provider.label %>
+          </a>
+        <% end %>
+      </div>
+
+      <div class="divider"></div>
+
+      <a href="/" class="btn btn-ghost">Back to Home</a>
+    </div>
+  </div>
+</div>

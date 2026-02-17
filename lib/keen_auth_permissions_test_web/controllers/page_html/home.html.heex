@@ -1,0 +1,70 @@
+<Layouts.flash_group flash={@flash} />
+
+<div class="min-h-screen bg-base-200">
+  <div class="navbar bg-base-100 shadow-lg">
+    <div class="flex-1">
+      <a href="/" class="btn btn-ghost text-xl">KeenAuth Permissions Test</a>
+    </div>
+    <div class="flex-none gap-2">
+      <%= if @user do %>
+        <div class="dropdown dropdown-end">
+          <div tabindex="0" role="button" class="btn btn-ghost">
+            <span class="hidden sm:inline"><%= @user.display_name || @user.email %></span>
+            <div class="avatar placeholder">
+              <div class="bg-primary text-primary-content w-8 rounded-full">
+                <span class="text-sm"><%= String.first(@user.display_name || @user.email || "?") %></span>
+              </div>
+            </div>
+          </div>
+          <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/users">Users</a></li>
+            <li><a href="/groups">Groups</a></li>
+            <li><a href="/permissions">Permissions</a></li>
+            <li class="divider"></li>
+            <li><a href="/auth/delete" class="text-error">Logout</a></li>
+          </ul>
+        </div>
+      <% else %>
+        <a href="/login" class="btn btn-primary">Login</a>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="hero min-h-[calc(100vh-4rem)]">
+    <div class="hero-content text-center">
+      <div class="max-w-md">
+        <h1 class="text-5xl font-bold">KeenAuth Permissions</h1>
+        <p class="py-6">
+          A demonstration app showing keen_auth and keen_auth_permissions integration with Phoenix LiveView.
+        </p>
+
+        <%= if @user do %>
+          <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+              <h2 class="card-title">Welcome, <%= @user.display_name || @user.email %>!</h2>
+              <p>You are logged in.</p>
+
+              <div class="stats stats-vertical shadow mt-4">
+                <div class="stat">
+                  <div class="stat-title">Groups</div>
+                  <div class="stat-value text-primary"><%= length(@user.roles || []) %></div>
+                </div>
+                <div class="stat">
+                  <div class="stat-title">Permissions</div>
+                  <div class="stat-value text-secondary"><%= length(@user.permissions || []) %></div>
+                </div>
+              </div>
+
+              <div class="card-actions justify-center mt-4">
+                <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+              </div>
+            </div>
+          </div>
+        <% else %>
+          <a href="/login" class="btn btn-primary btn-lg">Get Started</a>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
