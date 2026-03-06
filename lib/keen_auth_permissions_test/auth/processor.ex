@@ -1,41 +1,70 @@
 defmodule KeenAuthPermissionsTest.Auth.Processor do
   @moduledoc """
-  Authentication processor that integrates KeenAuth with KeenAuthPermissions.
+  Authentication processor for the email strategy.
 
-  This is a simplified processor that works without database integration.
-  For production, you would integrate with the database to persist users.
+  Fetches the user from the database and ensures groups/permissions are set,
+  returning a `%KeenAuthPermissions.User{}` struct.
+
+  The entra (Azure AD) strategy uses `KeenAuthPermissions.Processor.AzureAD` directly.
   """
 
   @behaviour KeenAuth.Processor
 
   require Logger
 
+  alias KeenAuthPermissions.DbContext
+  alias KeenAuthPermissions.User
+
   @impl true
-  def process(conn, provider, mapped_user, oauth_result) do
-    Logger.info("[Processor] Processing authentication for provider: #{inspect(provider)}")
-    Logger.debug("[Processor] Mapped user: #{inspect(mapped_user)}")
+  def process(conn, :email, mapped_user, response) do
+    Logger.info("[Processor] Processing email authentication")
 
-    # mapped_user can be:
-    # - A struct (KeenAuth.User) from OAuth mappers - use dot notation
-    # - A plain map with string keys from email handler - use get/2
-    user_id = get_field(mapped_user, [:user_id, "sub"])
-    email = get_field(mapped_user, [:email, "email"])
-    username = get_field(mapped_user, [:username, "preferred_username"]) || email
-    display_name = get_field(mapped_user, [:display_name, "name"]) || email
+    db_context = DbContext.current_db_context!(conn)
+    user_id = mapped_user |> get_field([:user_id, "sub"]) |> parse_user_id()
 
-    user = %{
-      id: user_id || "demo-user",
-      uuid: user_id,
-      username: username,
-      email: email,
-      display_name: display_name,
-      roles: get_roles_for_provider(provider),
-      permissions: get_permissions_for_provider(provider),
-      groups: get_groups_for_provider(provider)
+    {:ok, [db_user]} = db_context.auth_get_user_by_id(user_id, nil)
+
+    {groups, permissions} =
+      case db_context.auth_ensure_groups_and_permissions(
+             "system",
+             1,
+             "email-login",
+             db_user.user_id,
+             "email",
+             [],
+             []
+           ) do
+        {:ok, [%{groups: groups, short_code_permissions: short_code_permissions}]} ->
+          {groups, short_code_permissions}
+
+        {:ok, []} ->
+          {[], []}
+      end
+
+    user = %User{
+      user_id: db_user.user_id,
+      code: db_user.code,
+      uuid: db_user.uuid,
+      username: db_user.username,
+      email: db_user.email,
+      display_name: db_user.display_name,
+      groups: groups,
+      permissions: permissions
     }
 
     Logger.info("[Processor] User authenticated: #{user.username}")
-    {:ok, conn, user, oauth_result}
+    {:ok, conn, user, response}
+  end
+
+  @impl true
+  def sign_out(conn, _provider, params) do
+    Logger.info("[Processor] User signing out")
+
+    storage = KeenAuth.Storage.current_storage(conn)
+
+    conn
+    |> storage.delete()
+    |> Phoenix.Controller.redirect(to: params["redirect_to"] || "/")
   end
 
   # Helper to get a field from either a struct or a map with string keys
@@ -50,50 +79,10 @@ defmodule KeenAuthPermissionsTest.Auth.Processor do
     end)
   end
 
-  @impl true
-  def sign_out(conn, provider, params) do
-    Logger.info("[Processor] User signing out from #{inspect(provider)}")
+  defp parse_user_id(id) when is_integer(id), do: id
 
-    storage = KeenAuth.Storage.current_storage(conn)
-
-    conn
-    |> storage.delete()
-    |> Phoenix.Controller.redirect(to: params["redirect_to"] || "/")
-  end
-
-  # Demo roles based on provider
-  defp get_roles_for_provider(provider) when provider in [:entra, :azure_ad, :aad] do
-    ["admin", "users"]
-  end
-
-  defp get_roles_for_provider(_provider) do
-    ["users"]
-  end
-
-  # Demo permissions based on provider
-  defp get_permissions_for_provider(provider) when provider in [:entra, :azure_ad, :aad] do
-    [
-      "admin.read",
-      "admin.write",
-      "users.list",
-      "users.read",
-      "users.write",
-      "groups.list",
-      "groups.read",
-      "permissions.list"
-    ]
-  end
-
-  defp get_permissions_for_provider(_provider) do
-    ["users.list", "users.read"]
-  end
-
-  # Demo groups based on provider
-  defp get_groups_for_provider(provider) when provider in [:entra, :azure_ad, :aad] do
-    ["admins", "users"]
-  end
-
-  defp get_groups_for_provider(_provider) do
-    ["users"]
+  defp parse_user_id(id) when is_binary(id) do
+    {int, _} = Integer.parse(id)
+    int
   end
 end

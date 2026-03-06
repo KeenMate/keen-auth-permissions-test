@@ -56,14 +56,32 @@ config :phoenix, :json_library, Jason
 # KeenAuth configuration
 config :keen_auth,
   email_enabled: true,
-  storage_options: [store_tokens: true]
+  storage_options: [store_tokens: false],
+  sse: [
+    pubsub: KeenAuthPermissionsTest.PubSub,
+    heartbeat_interval: 30_000
+  ]
 
 # KeenAuthPermissions configuration
 config :keen_auth_permissions,
-  db_context: KeenAuthPermissionsTest.Database
+  db_context: KeenAuthPermissionsTest.Database,
+  tenant: 1,
+  context_extra_fields: [:session_id],
+  notifier: [
+    enabled: true,
+    pubsub: KeenAuthPermissionsTest.PubSub
+  ],
+  pg_listener: [
+    enabled: true,
+    repo: KeenAuthPermissionsTest.Repo,
+    pubsub: KeenAuthPermissionsTest.PubSub,
+    channels: ["auth_events"],
+    debounce_interval: 200
+  ]
 
 # KeenAuth strategies - Azure AD (Entra ID) and Email
 config :keen_auth_permissions_test, :keen_auth,
+  tenant: 1,
   strategies: [
     entra: [
       label: "Microsoft Entra",
@@ -71,7 +89,7 @@ config :keen_auth_permissions_test, :keen_auth,
       color: "#0078d4",
       strategy: Assent.Strategy.AzureAD,
       mapper: KeenAuth.Mapper.AzureAD,
-      processor: KeenAuthPermissionsTest.Auth.Processor,
+      processor: KeenAuthPermissions.Processor.AzureAD,
       config: [
         client_id: "CONFIGURE_IN_LOCAL_EXS",
         client_secret: "CONFIGURE_IN_LOCAL_EXS",
@@ -91,6 +109,12 @@ config :keen_auth_permissions_test, :keen_auth,
 
 # Use Req HTTP adapter for Assent
 config :assent, http_adapter: Assent.HTTPAdapter.Req
+
+# Microsoft Graph API configuration
+config :keen_microsoft_graphapi, :config,
+  tenant_id: "CONFIGURE_IN_LOCAL_EXS",
+  client_id: "CONFIGURE_IN_LOCAL_EXS",
+  client_secret: "CONFIGURE_IN_LOCAL_EXS"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

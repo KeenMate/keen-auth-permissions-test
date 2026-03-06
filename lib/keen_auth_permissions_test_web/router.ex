@@ -6,6 +6,7 @@ defmodule KeenAuthPermissionsTestWeb.Router do
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
+    plug KeenAuthPermissionsTestWeb.Plugs.SessionId
     plug :fetch_live_flash
     plug :put_root_layout, html: {KeenAuthPermissionsTestWeb.Layouts, :root}
     plug :protect_from_forgery
@@ -16,6 +17,7 @@ defmodule KeenAuthPermissionsTestWeb.Router do
   pipeline :browser_no_csrf do
     plug :accepts, ["html"]
     plug :fetch_session
+    plug KeenAuthPermissionsTestWeb.Plugs.SessionId
     plug :fetch_live_flash
     plug :put_root_layout, html: {KeenAuthPermissionsTestWeb.Layouts, :root}
     plug :put_secure_browser_headers
@@ -34,11 +36,15 @@ defmodule KeenAuthPermissionsTestWeb.Router do
   # Optional auth - fetch user if logged in, but don't require it
   pipeline :maybe_auth do
     plug KeenAuth.Plug.FetchUser
+
+    plug KeenAuthPermissions.Plug.RevalidateSession,
+      on_invalid: &KeenAuthPermissions.Plug.RevalidateSession.clear_user/2
   end
 
   # Require authentication
   pipeline :require_auth do
     plug KeenAuth.Plug.FetchUser
+    plug KeenAuthPermissions.Plug.RevalidateSession
     plug KeenAuth.Plug.RequireAuthenticated, redirect: "/login"
   end
 
@@ -58,6 +64,7 @@ defmodule KeenAuthPermissionsTestWeb.Router do
     get "/register", PageController, :register
     post "/register", PageController, :create_registration
     get "/confirm", PageController, :confirm
+    live "/mfa/setup", MfaSetupLive
   end
 
   # Email authentication routes (need CSRF protection)
@@ -81,16 +88,38 @@ defmodule KeenAuthPermissionsTestWeb.Router do
     get "/delete", KeenAuth.AuthenticationController, :delete
   end
 
+  # Session clear endpoint (JS-friendly, no redirect)
+  scope "/auth" do
+    pipe_through [:browser, :authentication]
+
+    post "/clear", KeenAuth.SessionClearPlug, []
+  end
+
+  # SSE endpoint for real-time notifications
+  scope "/auth" do
+    pipe_through [:browser, :authentication, :require_auth]
+
+    get "/events/stream", KeenAuth.SSE.Plug, []
+  end
+
   # Protected routes (require authentication)
   scope "/", KeenAuthPermissionsTestWeb do
     pipe_through [:browser, :authentication, :require_auth]
 
     get "/dashboard", PageController, :dashboard
     live "/users", UsersLive
+    live "/users/:user_id", UserDetailLive
     live "/groups", GroupsLive
+    live "/groups/:group_id", GroupDetailLive
     live "/permissions", PermissionsLive
     live "/events", EventsLive
     live "/perm-sets", PermSetsLive
+    live "/perm-sets/:perm_set_id", PermSetDetailLive
     live "/tenants", TenantsLive
+    live "/tenants/:tenant_id", TenantDetailLive
+    live "/resource-types", ResourceTypesLive
+    live "/resource-access", ResourceAccessLive
+    live "/blacklist", BlacklistLive
+    live "/mfa", MfaLive
   end
 end

@@ -29,6 +29,7 @@ defmodule KeenAuthPermissionsTestWeb.TenantsLive do
        create_is_removable: true,
        create_is_assignable: true,
        create_owner_id: "",
+       code_touched: false,
        # Edit form
        editing: nil,
        edit_title: "",
@@ -71,7 +72,35 @@ defmodule KeenAuthPermissionsTestWeb.TenantsLive do
        create_is_removable: true,
        create_is_assignable: true,
        create_owner_id: "",
+       code_touched: false,
        error: nil
+     )}
+  end
+
+  @impl true
+  def handle_event("create_form_change", params, socket) do
+    code_touched = socket.assigns.code_touched
+
+    code_touched =
+      if params["code"] != socket.assigns.create_code do
+        true
+      else
+        code_touched
+      end
+
+    code =
+      if not code_touched do
+        title_to_code(params["title"] || "")
+      else
+        params["code"] || ""
+      end
+
+    {:noreply,
+     assign(socket,
+       create_title: params["title"] || "",
+       create_code: code,
+       create_owner_id: params["owner_id"] || "",
+       code_touched: code_touched
      )}
   end
 
@@ -107,6 +136,7 @@ defmodule KeenAuthPermissionsTestWeb.TenantsLive do
                create_is_removable: true,
                create_is_assignable: true,
                create_owner_id: "",
+               code_touched: false,
                error: nil,
                loading: true
              )
@@ -230,6 +260,14 @@ defmodule KeenAuthPermissionsTestWeb.TenantsLive do
     end
   end
 
+  defp title_to_code(title) do
+    title
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9\s]/, "")
+    |> String.trim()
+    |> String.replace(~r/\s+/, "_")
+  end
+
   defp build_context(nil), do: RequestContext.system_ctx()
 
   defp build_context(user) do
@@ -254,19 +292,7 @@ defmodule KeenAuthPermissionsTestWeb.TenantsLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-base-200">
-      <div class="navbar bg-base-100 shadow-lg">
-        <div class="flex-1">
-          <a href="/" class="btn btn-ghost text-xl">KeenAuth Permissions Test</a>
-        </div>
-        <div class="flex-none gap-2">
-          <a href="/dashboard" class="btn btn-ghost">Dashboard</a>
-          <a href="/events" class="btn btn-ghost">Events</a>
-          <a href="/auth/delete" class="btn btn-ghost text-error">Logout</a>
-        </div>
-      </div>
-
-      <div class="container mx-auto p-6">
+    <.admin_layout current_page={:tenants}>
         <div class="flex justify-between items-center mb-6">
           <h1 class="text-3xl font-bold">Tenants</h1>
           <div class="breadcrumbs text-sm">
@@ -305,8 +331,8 @@ defmodule KeenAuthPermissionsTestWeb.TenantsLive do
                   </div>
                 </div>
               </form>
-              <button phx-click="show_create" class="btn btn-primary btn-sm">
-                + New Tenant
+              <button phx-click="show_create" class="btn btn-primary">
+                New Tenant
               </button>
             </div>
           </div>
@@ -317,7 +343,7 @@ defmodule KeenAuthPermissionsTestWeb.TenantsLive do
           <div class="card bg-base-100 shadow-xl mt-4 border-2 border-primary">
             <div class="card-body">
               <h2 class="card-title text-lg">Create Tenant</h2>
-              <form phx-submit="create" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form phx-submit="create" phx-change="create_form_change" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="form-control">
                   <label class="label"><span class="label-text">Title</span></label>
                   <input
@@ -335,10 +361,13 @@ defmodule KeenAuthPermissionsTestWeb.TenantsLive do
                     type="text"
                     name="code"
                     value={@create_code}
-                    placeholder="tenant-code"
+                    placeholder="Auto-generated from title"
                     class="input input-bordered input-sm"
                     required
                   />
+                  <label class="label">
+                    <span class="label-text-alt">Auto-generated from title. Edit to override.</span>
+                  </label>
                 </div>
                 <div class="form-control">
                   <label class="label"><span class="label-text">Owner ID</span></label>
@@ -383,21 +412,22 @@ defmodule KeenAuthPermissionsTestWeb.TenantsLive do
               <table class="table table-zebra">
                 <thead>
                   <tr>
+                    <th class="w-1">Actions</th>
                     <th>ID</th>
                     <th>Title</th>
                     <th>Code</th>
                     <th>UUID</th>
                     <th>Removable</th>
                     <th>Assignable</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   <%= for tenant <- @tenants do %>
                     <%= if @editing == tenant.tenant_id do %>
                       <tr class="bg-base-200">
+                        <td></td>
                         <td><%= tenant.tenant_id %></td>
-                        <td colspan="6">
+                        <td colspan="5">
                           <form phx-submit="update" class="flex items-center gap-3 flex-wrap">
                             <input
                               type="text"
@@ -439,6 +469,25 @@ defmodule KeenAuthPermissionsTestWeb.TenantsLive do
                       </tr>
                     <% else %>
                       <tr>
+                        <td>
+                          <div class="flex gap-1">
+                            <.action_icon
+                              icon="hero-pencil"
+                              color="yellow"
+                              tooltip="Edit"
+                              phx-click="edit"
+                              phx-value-id={tenant.tenant_id}
+                            />
+                            <.action_icon
+                              icon="hero-trash"
+                              color="red"
+                              tooltip="Delete"
+                              confirm="Are you sure you want to delete this tenant?"
+                              phx-click="delete"
+                              phx-value-uuid={tenant.uuid}
+                            />
+                          </div>
+                        </td>
                         <td><%= tenant.tenant_id %></td>
                         <td><%= tenant.title %></td>
                         <td><code class="text-sm"><%= tenant.code %></code></td>
@@ -456,17 +505,6 @@ defmodule KeenAuthPermissionsTestWeb.TenantsLive do
                           <% else %>
                             <span class="badge badge-ghost badge-sm">No</span>
                           <% end %>
-                        </td>
-                        <td class="flex gap-1">
-                          <button phx-click="edit" phx-value-id={tenant.tenant_id} class="btn btn-ghost btn-xs">Edit</button>
-                          <button
-                            phx-click="delete"
-                            phx-value-uuid={tenant.uuid}
-                            data-confirm="Are you sure you want to delete this tenant?"
-                            class="btn btn-error btn-xs"
-                          >
-                            Delete
-                          </button>
                         </td>
                       </tr>
                     <% end %>
@@ -492,8 +530,7 @@ defmodule KeenAuthPermissionsTestWeb.TenantsLive do
             <% end %>
           </div>
         </div>
-      </div>
-    </div>
+    </.admin_layout>
     """
   end
 end

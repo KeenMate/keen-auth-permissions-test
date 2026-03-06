@@ -66,7 +66,14 @@ defmodule KeenAuthPermissionsTest.MixProject do
 
       # Authentication & Permissions
       {:keen_auth, path: "../keen_auth", override: true},
-      {:keen_auth_permissions, path: "../keen-auth-permissions"}
+      {:keen_auth_permissions, path: "../keen-auth-permissions"},
+
+      # MFA / TOTP
+      {:nimble_totp, "~> 1.0"},
+      {:eqrcode, "~> 0.2.0"},
+
+      # Microsoft Graph API
+      {:keen_microsoft_graphapi, path: "../keen-microsoft-graphapi/microsoft_graphapi"}
     ]
   end
 

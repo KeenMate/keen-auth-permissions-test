@@ -81,6 +81,7 @@ defmodule KeenAuthPermissionsTestWeb do
       import Phoenix.HTML
       # Core UI components
       import KeenAuthPermissionsTestWeb.CoreComponents
+      import KeenAuthPermissionsTestWeb.AuthComponents
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

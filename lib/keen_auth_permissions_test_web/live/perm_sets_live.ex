@@ -326,19 +326,7 @@ defmodule KeenAuthPermissionsTestWeb.PermSetsLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-base-200">
-      <div class="navbar bg-base-100 shadow-lg">
-        <div class="flex-1">
-          <a href="/" class="btn btn-ghost text-xl">KeenAuth Permissions Test</a>
-        </div>
-        <div class="flex-none gap-2">
-          <a href="/dashboard" class="btn btn-ghost">Dashboard</a>
-          <a href="/events" class="btn btn-ghost">Events</a>
-          <a href="/auth/delete" class="btn btn-ghost text-error">Logout</a>
-        </div>
-      </div>
-
-      <div class="container mx-auto p-6">
+    <.admin_layout current_page={:perm_sets}>
         <div class="flex justify-between items-center mb-6">
           <h1 class="text-3xl font-bold">Permission Sets</h1>
           <div class="breadcrumbs text-sm">
@@ -377,8 +365,8 @@ defmodule KeenAuthPermissionsTestWeb.PermSetsLive do
                   </div>
                 </div>
               </form>
-              <button phx-click="show_create" class="btn btn-primary btn-sm">
-                + New Permission Set
+              <button phx-click="show_create" class="btn btn-primary">
+                New Permission Set
               </button>
             </div>
           </div>
@@ -441,21 +429,22 @@ defmodule KeenAuthPermissionsTestWeb.PermSetsLive do
               <table class="table table-zebra">
                 <thead>
                   <tr>
+                    <th class="w-1">Actions</th>
                     <th>ID</th>
                     <th>Title</th>
                     <th>Code</th>
                     <th>Type</th>
                     <th>Assignable</th>
                     <th>Permissions</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   <%= for ps <- @perm_sets do %>
                     <%= if @editing == ps.perm_set_id do %>
                       <tr class="bg-base-200">
+                        <td></td>
                         <td><%= ps.perm_set_id %></td>
-                        <td colspan="6">
+                        <td colspan="5">
                           <form phx-submit="update" class="flex items-center gap-3">
                             <input
                               type="text"
@@ -476,6 +465,24 @@ defmodule KeenAuthPermissionsTestWeb.PermSetsLive do
                       </tr>
                     <% else %>
                       <tr>
+                        <td>
+                          <div class="flex gap-1">
+                            <.action_icon
+                              icon="hero-pencil"
+                              color="yellow"
+                              tooltip="Edit"
+                              phx-click="edit"
+                              phx-value-id={ps.perm_set_id}
+                            />
+                            <.action_icon
+                              icon="hero-key"
+                              color="blue"
+                              tooltip="Manage permissions"
+                              phx-click="manage_perms"
+                              phx-value-id={ps.perm_set_id}
+                            />
+                          </div>
+                        </td>
                         <td><%= ps.perm_set_id %></td>
                         <td><%= ps.title %></td>
                         <td><code class="text-sm"><%= ps.code %></code></td>
@@ -495,10 +502,6 @@ defmodule KeenAuthPermissionsTestWeb.PermSetsLive do
                         </td>
                         <td>
                           <span class="badge badge-outline badge-sm"><%= ps.permission_count %></span>
-                        </td>
-                        <td class="flex gap-1">
-                          <button phx-click="edit" phx-value-id={ps.perm_set_id} class="btn btn-ghost btn-xs">Edit</button>
-                          <button phx-click="manage_perms" phx-value-id={ps.perm_set_id} class="btn btn-ghost btn-xs">Perms</button>
                         </td>
                       </tr>
                     <% end %>
@@ -557,22 +560,26 @@ defmodule KeenAuthPermissionsTestWeb.PermSetsLive do
                   <table class="table table-zebra table-sm">
                     <thead>
                       <tr>
+                        <th class="w-1">Actions</th>
                         <th>Code</th>
                         <th>Title</th>
-                        <th class="w-20">Action</th>
                       </tr>
                     </thead>
                     <tbody>
                       <%= for perm <- @current_permissions do %>
                         <% {perm_code, perm_title} = extract_perm_info(perm) %>
                         <tr>
+                          <td>
+                            <.action_icon
+                              icon="hero-trash"
+                              color="red"
+                              tooltip="Remove permission"
+                              phx-click="remove_permission"
+                              phx-value-code={perm_code}
+                            />
+                          </td>
                           <td><code class="text-sm"><%= perm_code %></code></td>
                           <td class="text-sm"><%= perm_title %></td>
-                          <td>
-                            <button phx-click="remove_permission" phx-value-code={perm_code} class="btn btn-error btn-xs">
-                              Remove
-                            </button>
-                          </td>
                         </tr>
                       <% end %>
                     </tbody>
@@ -593,8 +600,7 @@ defmodule KeenAuthPermissionsTestWeb.PermSetsLive do
             </div>
           </div>
         <% end %>
-      </div>
-    </div>
+    </.admin_layout>
     """
   end
 end

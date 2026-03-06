@@ -74,23 +74,7 @@ defmodule KeenAuthPermissionsTestWeb.DemoLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-base-200">
-      <div class="navbar bg-base-100 shadow-lg">
-        <div class="flex-1">
-          <a href="/" class="btn btn-ghost text-xl">KeenAuth Permissions Test</a>
-        </div>
-        <div class="flex-none gap-2">
-          <%= if @user do %>
-            <a href="/dashboard" class="btn btn-ghost">Dashboard</a>
-            <a href="/events" class="btn btn-ghost">Events</a>
-            <a href="/auth/delete" class="btn btn-ghost text-error">Logout</a>
-          <% else %>
-            <a href="/login" class="btn btn-primary">Login</a>
-          <% end %>
-        </div>
-      </div>
-
-      <div class="container mx-auto p-6">
+    <.admin_layout current_page={:demo}>
         <h1 class="text-3xl font-bold mb-6">Permission Helpers Demo</h1>
 
         <div class="alert alert-info mb-6">
@@ -205,8 +189,7 @@ defmodule KeenAuthPermissionsTestWeb.DemoLive do
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </.admin_layout>
     """
   end
 end

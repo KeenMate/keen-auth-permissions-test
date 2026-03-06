@@ -8,14 +8,15 @@ defmodule KeenAuthPermissionsTest.Auth.EmailHandler do
   import Phoenix.Controller
 
   alias KeenAuthPermissions.Auth
+  alias KeenAuthPermissionsTestWeb.ConnContext
 
   require Logger
 
   @impl true
-  def authenticate(_conn, %{"email" => email, "password" => password}) do
+  def authenticate(conn, %{"email" => email, "password" => password}) do
     Logger.info("[EmailHandler] Attempting authentication for: #{email}")
 
-    case Auth.authenticate_by_email(email, password) do
+    case Auth.authenticate_by_email(email, password, ConnContext.conn_opts(conn)) do
       {:ok, user} ->
         Logger.info("[EmailHandler] Authentication successful for: #{email}")
         # Return raw user map - will be passed to Mapper

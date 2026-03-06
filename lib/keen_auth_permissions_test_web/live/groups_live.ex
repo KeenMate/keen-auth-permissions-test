@@ -1,5 +1,6 @@
 defmodule KeenAuthPermissionsTestWeb.GroupsLive do
   use KeenAuthPermissionsTestWeb, :live_view
+  require Logger
 
   alias KeenAuthPermissions.UserGroups
   alias KeenAuthPermissions.RequestContext
@@ -32,6 +33,23 @@ defmodule KeenAuthPermissionsTestWeb.GroupsLive do
      socket
      |> assign(search_text: search_text, loading: true)
      |> load_groups()}
+  end
+
+  def handle_event("delete_group", %{"group_id" => group_id_str}, socket) do
+    %{ctx: ctx} = socket.assigns
+    group_id = String.to_integer(group_id_str)
+
+    case UserGroups.delete(ctx, group_id, @default_tenant_id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Group deleted")
+         |> load_groups()}
+
+      {:error, reason} ->
+        Logger.error("Failed to delete group", reason: inspect(reason))
+        {:noreply, put_flash(socket, :error, "Failed to delete group: #{inspect(reason)}")}
+    end
   end
 
   defp load_groups(socket) do
@@ -67,19 +85,7 @@ defmodule KeenAuthPermissionsTestWeb.GroupsLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-base-200">
-      <div class="navbar bg-base-100 shadow-lg">
-        <div class="flex-1">
-          <a href="/" class="btn btn-ghost text-xl">KeenAuth Permissions Test</a>
-        </div>
-        <div class="flex-none gap-2">
-          <a href="/dashboard" class="btn btn-ghost">Dashboard</a>
-          <a href="/events" class="btn btn-ghost">Events</a>
-          <a href="/auth/delete" class="btn btn-ghost text-error">Logout</a>
-        </div>
-      </div>
-
-      <div class="container mx-auto p-6">
+    <.admin_layout current_page={:groups}>
         <div class="flex justify-between items-center mb-6">
           <h1 class="text-3xl font-bold">User Groups</h1>
           <div class="breadcrumbs text-sm">
@@ -125,6 +131,7 @@ defmodule KeenAuthPermissionsTestWeb.GroupsLive do
               <table class="table table-zebra">
                 <thead>
                   <tr>
+                    <th class="w-1">Actions</th>
                     <th>ID</th>
                     <th>Code</th>
                     <th>Title</th>
@@ -136,9 +143,19 @@ defmodule KeenAuthPermissionsTestWeb.GroupsLive do
                 <tbody>
                   <%= for group <- @groups do %>
                     <tr>
+                      <td>
+                        <.action_icon
+                          icon="hero-trash"
+                          color="red"
+                          tooltip="Delete group"
+                          confirm={"Delete group \"#{group.title}\"? This action cannot be undone."}
+                          phx-click="delete_group"
+                          phx-value-group_id={group.user_group_id}
+                        />
+                      </td>
                       <td><%= group.user_group_id %></td>
                       <td><code class="text-sm"><%= group.code %></code></td>
-                      <td><%= group.title %></td>
+                      <td><a href={"/groups/#{group.user_group_id}"} class="link link-primary"><%= group.title %></a></td>
                       <td>
                         <span class={"badge #{type_badge(group)}"}>
                           <%= group_type_label(group) %>
@@ -156,7 +173,7 @@ defmodule KeenAuthPermissionsTestWeb.GroupsLive do
                   <% end %>
                   <%= if Enum.empty?(@groups) do %>
                     <tr>
-                      <td colspan="6" class="text-center text-base-content/50">
+                      <td colspan="7" class="text-center text-base-content/50">
                         No groups found
                       </td>
                     </tr>
@@ -166,8 +183,7 @@ defmodule KeenAuthPermissionsTestWeb.GroupsLive do
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </.admin_layout>
     """
   end
 

@@ -418,6 +418,77 @@ defmodule KeenAuthPermissionsTestWeb.CoreComponents do
   end
 
   @doc """
+  Renders the admin layout with a sidebar and top navbar.
+
+  ## Examples
+
+      <.admin_layout current_page={:users}>
+        <h1>Users</h1>
+      </.admin_layout>
+  """
+  attr :current_page, :atom, default: nil
+  slot :inner_block, required: true
+
+  @sidebar_items [
+    %{path: "/dashboard", label: "Dashboard", icon: "hero-home", page: :dashboard},
+    %{path: "/users", label: "Users", icon: "hero-users", page: :users},
+    %{path: "/groups", label: "Groups", icon: "hero-user-group", page: :groups},
+    %{path: "/permissions", label: "Permissions", icon: "hero-key", page: :permissions},
+    %{path: "/perm-sets", label: "Permission Sets", icon: "hero-rectangle-stack", page: :perm_sets},
+    %{path: "/tenants", label: "Tenants", icon: "hero-building-office", page: :tenants},
+    %{path: "/resource-types", label: "Resource Types", icon: "hero-cube", page: :resource_types},
+    %{path: "/resource-access", label: "Resource Access", icon: "hero-shield-check", page: :resource_access},
+    %{path: "/events", label: "Events", icon: "hero-bell", page: :events},
+    %{path: "/blacklist", label: "Blacklist", icon: "hero-no-symbol", page: :blacklist},
+    %{path: "/mfa", label: "MFA", icon: "hero-device-phone-mobile", page: :mfa}
+  ]
+
+  def admin_layout(assigns) do
+    assigns = assign(assigns, :sidebar_items, @sidebar_items)
+
+    ~H"""
+    <div class="min-h-screen bg-base-200 flex">
+      <%!-- Sidebar --%>
+      <aside class="w-56 bg-base-100 shadow-lg flex flex-col shrink-0">
+        <div class="p-4 border-b border-base-300">
+          <a href="/" class="text-lg font-bold">KeenAuth Test</a>
+        </div>
+
+        <nav class="flex-1 py-2 overflow-y-auto">
+          <ul class="menu gap-0.5 px-2">
+            <%= for item <- @sidebar_items do %>
+              <li>
+                <a
+                  href={item.path}
+                  class={if @current_page == item.page, do: "active", else: ""}
+                >
+                  <.icon name={item.icon} class="size-4" />
+                  {item.label}
+                </a>
+              </li>
+            <% end %>
+          </ul>
+        </nav>
+
+        <div class="p-2 border-t border-base-300">
+          <a href="/auth/delete" class="btn btn-ghost btn-sm w-full text-error justify-start gap-2">
+            <.icon name="hero-arrow-right-on-rectangle" class="size-4" />
+            Logout
+          </a>
+        </div>
+      </aside>
+
+      <%!-- Main content --%>
+      <div class="flex-1 flex flex-col min-w-0">
+        <div class="p-6">
+          {render_slot(@inner_block)}
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
   Renders a [Heroicon](https://heroicons.com).
 
   Heroicons come in three styles – outline, solid, and mini.
@@ -441,6 +512,45 @@ defmodule KeenAuthPermissionsTestWeb.CoreComponents do
   def icon(%{name: "hero-" <> _} = assigns) do
     ~H"""
     <span class={[@name, @class]} />
+    """
+  end
+
+  @doc """
+  Renders a table action icon button.
+
+  ## Examples
+
+      <.action_icon icon="hero-trash" color="red" confirm="Are you sure?" phx-click="delete" />
+      <.action_icon icon="hero-pencil" color="yellow" phx-click="edit" />
+      <.action_icon icon="hero-eye" color="blue" phx-click="view" />
+  """
+  attr :icon, :string, required: true
+  attr :color, :string, default: "gray"
+  attr :confirm, :string, default: nil
+  attr :tooltip, :string, default: nil
+  attr :rest, :global, include: ~w(phx-click phx-value-id phx-value-user_id phx-value-mapping_id phx-value-aad_oid phx-value-group_id phx-value-type phx-value-uuid phx-value-code)
+
+  def action_icon(assigns) do
+    color_classes = %{
+      "red" => "bg-red-500 hover:bg-red-600",
+      "yellow" => "bg-yellow-500 hover:bg-yellow-600",
+      "blue" => "bg-blue-500 hover:bg-blue-600",
+      "green" => "bg-green-500 hover:bg-green-600",
+      "gray" => "bg-gray-500 hover:bg-gray-600"
+    }
+
+    assigns = assign(assigns, :color_class, Map.get(color_classes, assigns.color, color_classes["gray"]))
+
+    ~H"""
+    <button
+      type="button"
+      class={"inline-flex items-center justify-center size-8 rounded text-white cursor-pointer #{@color_class}"}
+      title={@tooltip}
+      data-confirm={@confirm}
+      {@rest}
+    >
+      <.icon name={@icon} class="size-4" />
+    </button>
     """
   end
 
